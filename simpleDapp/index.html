@@ -1,91 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>First DApp Demo</title>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+		<title>First DApp Demo</title>
 
-    <link rel="stylesheet" type="text/css" href="main.css">
-    <script src="web3_1.2.6.min.js"></script>
+		<link rel="stylesheet" type="text/css" href="main.css" />
+		<script src="web3_1.2.6.min.js"></script>
+	</head>
+	<body>
+		<div class="container">
+			<h1>First DApp Demo</h1>
 
-</head>
-<body>
-    <div class="container">
+			<h2 id="info"></h2>
 
-        <h1> First DApp Demo</h1>
+			<label for="name" class="col-lg-2 control-label">姓名：</label>
+			<input id="name" type="text" />
 
-        <h2 id="info"></h2>
+			<label for="name" class="col-lg-2 control-label">年龄：</label>
+			<input id="age" type="text" />
 
-        <label for="name" class="col-lg-2 control-label">姓名：</label>
-        <input id="name" type="text">
+			<button id="button">更新</button>
+		</div>
 
-        <label for="name" class="col-lg-2 control-label">年龄：</label>
-        <input id="age" type="text">
+		<script src="jquery.js"></script>
 
-        <button id="button">更新</button>
+		<script>
+			// 初始化web3
+			function initWeb3() {
+				var web3;
 
+				//
+				if (window.ethereum) {
+					web3 = new Web3(window.ethereum);
+					// 请求用户授权
+					window.ethereum.enable();
+				} else if (typeof web3 !== "undefined") {
+					// 如果用户已解锁钱包，则实例化web3对象 和 默认账户。
+					web3 = new Web3(web3.currentProvider);
+					web3.eth.defaultAccount = web3.eth.accounts[0];
+					console.log(web3.eth.defaultAccount);
+				} else {
+					// set the provider you want from Web3.providers
+					web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:7545"));
+				}
+				return web3;
+			}
 
-    </div>
+			var web3 = initWeb3();
 
-    <script src="jquery.js"></script>
+			web3.eth.getAccounts((error, accounts) => {
+				web3.eth.defaultAccount = accounts[0];
+				console.log(accounts);
+			});
 
-    <script>
+			// 实例化合约
+			var info = new web3.eth.Contract(
+				[
+					{
+						constant: true,
+						inputs: [],
+						name: "getInfo",
+						outputs: [
+							{ name: "", type: "string" },
+							{ name: "", type: "uint256" },
+						],
+						payable: false,
+						stateMutability: "view",
+						type: "function",
+					},
+					{
+						constant: false,
+						inputs: [
+							{ name: "_fName", type: "string" },
+							{ name: "_age", type: "uint256" },
+						],
+						name: "setInfo",
+						outputs: [],
+						payable: false,
+						stateMutability: "nonpayable",
+						type: "function",
+					},
+				],
+				"0x698f784668cab1338a7f03dbfda5596ec65e9ca3"
+			);
 
-        function initWeb3() {
-            var web3;
-            if (window.ethereum) {
-                web3 = new Web3(window.ethereum);
-            // 请求用户授权
-                window.ethereum.enable();
-            } else if (typeof web3 !== 'undefined') {
-                web3 = new Web3(web3.currentProvider);
-                web3.eth.defaultAccount = web3.eth.accounts[0];
-                console.log(web3.eth.defaultAccount);
-            } else {
-                // set the provider you want from Web3.providers
-                web3 = new Web3(new Web3.providers.HttpProvider("http://localhost:7545"));
-            }
-            return web3;
-        }
+			// 获取合约链上信息
+			info.methods.getInfo().call(function (error, result) {
+				console.log(error);
+				if (!error) {
+					$("#info").html(result[0] + " (" + result[1] + " years old)");
+					console.log(result);
+				} else {
+					console.error(error);
+				}
+			});
 
-        var web3 = initWeb3();
+			// 点击按钮 发送数据到 链上合约
+			$("#button").click(function () {
+				console.log(info);
+				console.log(web3.eth.defaultAccount);
 
-        web3.eth.getAccounts((error, accounts) => {
-            web3.eth.defaultAccount = accounts[0];
-            console.log(accounts)
-        })
-
-        
-        var info = new web3.eth.Contract(
-            [{"constant":true,"inputs":[],"name":"getInfo","outputs":[{"name":"","type":"string"},{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"_fName","type":"string"},{"name":"_age","type":"uint256"}],"name":"setInfo","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"}]
-            ,'0x698f784668cab1338a7f03dbfda5596ec65e9ca3');
-
-        info.methods.getInfo().call( 
-            function(error, result) {
-                console.log(error);
-                if(!error) {
-                    $("#info").html(result[0]+' ('+result[1]+' years old)');
-                    console.log(result);
-                } else {
-                    console.error(error);
-                }
-            });
-
-        $("#button").click(function() {
-            console.log(info);
-            console.log(web3.eth.defaultAccount);
-
-            info.methods.setInfo($("#name").val(), $("#age").val())
-            .send({from: web3.eth.defaultAccount},
-             function(error, transactionHash) {
-                 console.log(error)
-            
-            });
-            
-        });
-
-    </script>
-
-</body>
+				info.methods
+					.setInfo($("#name").val(), $("#age").val())
+					.send({ from: web3.eth.defaultAccount }, function (error, transactionHash) {
+						console.log(error);
+					});
+			});
+		</script>
+	</body>
 </html>
