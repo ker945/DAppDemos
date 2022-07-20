@@ -1,86 +1,99 @@
+// 该示例部署地址：
+
 App = {
-  web3Provider: null,
-  contracts: {},
+	web3Provider: null,
+	contracts: {},
 
-  init: function() {
-    return App.initWeb3();
-  },
+	init: function () {
+		return App.initWeb3();
+	},
 
-  initWeb3: async function() {
-    if (window.ethereum) {
-      this.provider = window.ethereum;
-      try {
-        await window.ethereum.enable();
-      } catch (error) {
-        console.error("User denied account access");
-      }
-    }  else if (typeof web3 !== 'undefined') {
-         App.web3Provider = web3.currentProvider
-         web3 = new Web3(App.web3Provider);
-     } else {
-         App.web3Provider = new Web3.providers.HttpProvider("http://localhost:9545")
-         web3 = new Web3(App.web3Provider);
-     }
+	// 初始化web3示例
+	initWeb3: async function () {
+		if (window.ethereum) {
+			this.provider = window.ethereum;
+			try {
+				await window.ethereum.enable();
+			} catch (error) {
+				console.error("User denied account access");
+			}
+		} else if (typeof web3 !== "undefined") {
+			App.web3Provider = web3.currentProvider;
+			web3 = new Web3(App.web3Provider);
+		} else {
+			App.web3Provider = new Web3.providers.HttpProvider("http://localhost:9545");
+			web3 = new Web3(App.web3Provider);
+		}
 
-     return App.initContract();
-  },
+		return App.initContract();
+	},
 
-  initContract: function() {
+	// 初始化合约实例
+	initContract: function () {
+		// ??? InfoContract.json 文件在哪里 ???
+		$.getJSON("InfoContract.json", function (data) {
+			App.contracts.InfoContract = TruffleContract(data);
+			App.contracts.InfoContract.setProvider(App.web3Provider);
 
-    $.getJSON('InfoContract.json', function(data){
-      App.contracts.InfoContract = TruffleContract(data);
-      App.contracts.InfoContract.setProvider(App.web3Provider);
+			App.getInfo();  // getInfo() 获取合约信息，后根据合约链上数据 更改渲染主页数据。
+			App.watchChanged();
+		});
 
-      App.getInfo();
-      App.watchChanged();
-    });
+		App.bindEvents();  // bindEvents() 绑定事件 给提交按钮 来更改合约链上数据、获取链上数据、更新渲染主页数据。
+	},
 
-    App.bindEvents();
+	// getInfo() 获取合约信息，后根据合约链上数据 更改渲染主页数据。
+	getInfo: function () {
+		App.contracts.InfoContract.deployed()
+			.then(function (instance) {
+				return instance.getInfo.call();  //获取合约链上信息
+			})
+			.then(function (result) {
+				$("#loader").hide();  //隐藏loading...
+				$("#info").html(result[0] + " (" + result[1] + " years old)");  //根据链上信息 渲染页面数据。
+				console.log(result);
+			})
+			.catch(function (err) {
+				console.error(err);
+			});
+	},
 
-  },
+	// bindEvents() 绑定事件 给提交按钮 来更改合约链上数据、获取链上数据、更新渲染主页数据。
+	bindEvents: function () {
+		$("#button").click(function () {
+			
+			//点击提交后，显示 loading 信息...
+			$("#loader").show();  
 
-  getInfo: function() {
-    App.contracts.InfoContract.deployed().then(function(instance) {
-      return instance.getInfo.call();
-    }).then(function(result) {
-      $("#loader").hide();
-      $("#info").html(result[0]+' ('+result[1]+' years old)');
-      console.log(result);
-    }).catch(function(err) {
-      console.error(err);
-    });
-  },
+			//根据提交按钮信息，交互链上合约更改信息。 后链式调用 // getInfo() 获取合约信息，后根据合约链上数据 更改渲染主页数据。
+			App.contracts.InfoContract.deployed()
+				.then(function (instance) {
+					return instance.setInfo($("#name").val(), $("#age").val(), { gas: 500000 });
+				})
+				// getInfo() 获取合约信息，后根据合约链上数据 更改渲染主页数据。
+				.then(function (result) {
+					return App.getInfo();
+				})
+				.catch(function (err) {
+					console.error(err);
+				});
+		});
+	},
 
-  bindEvents: function() {
-    $("#button").click(function() {
-        $("#loader").show();
+	// 监听合约事件
+	watchChanged: function () {
+		App.contracts.InfoContract.deployed().then(function (instance) {
+			var infoEvent = instance.Instructor();
+			return infoEvent.watch(function (err, result) {
+				$("#loader").hide();
+				$("#info").html(result.args.name + " (" + result.args.age + " years old)");
+			});
+		});
+	},
+};
 
-        App.contracts.InfoContract.deployed().then(function(instance) {
-          return instance.setInfo($("#name").val(), $("#age").val(), {gas: 500000});
-        }).then(function(result) {
-          return App.getInfo();
-        } ).catch(function(err) {
-          console.error(err);
-        });
-      });
-  },
-
-  watchChanged: function() {
-    App.contracts.InfoContract.deployed().then(function(instance) {
-      var infoEvent = instance.Instructor();
-      return infoEvent.watch(function(err, result) {
-        $("#loader").hide();
-        $("#info").html(result.args.name +' ('+ result.args.age +' years old)');
-      });
-    });
-  }
-
-  }
-
-
-
-$(function(){
-  $(window).load(function() {
-      App.init();
-  });
+$(function () {
+	$(window).load(function () {
+		App.init();
+	});
 });
