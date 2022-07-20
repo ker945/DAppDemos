@@ -1,4 +1,4 @@
-// 该示例部署地址：
+// 该示例部署地址：  https://ropsten.etherscan.io/address/0x698f784668cab1338a7f03dbfda5596ec65e9ca3
 
 App = {
 	web3Provider: null,
@@ -28,29 +28,35 @@ App = {
 		return App.initContract();
 	},
 
-	// 初始化合约实例
+
+
+	// 总体功能集成
+	// 初始化合约实例 并 获取合约渲染主页数据、监听合约事件获取信息渲染数据、添加绑定事件处理：更改链上数据 后 获取数据并渲染主页。
 	initContract: function () {
 		// ??? InfoContract.json 文件在哪里 ???
+		// 根据获取到的json文件来构建合约 并 设置provider；
 		$.getJSON("InfoContract.json", function (data) {
 			App.contracts.InfoContract = TruffleContract(data);
 			App.contracts.InfoContract.setProvider(App.web3Provider);
 
-			App.getInfo();  // getInfo() 获取合约信息，后根据合约链上数据 更改渲染主页数据。
-			App.watchChanged();
+			App.getInfo(); // getInfo() 获取合约信息，后根据合约链上数据 更改渲染主页数据。
+			App.watchChanged(); // watchChanged() 监听合约事件: 获取合约链上信息、隐藏loading...、根据链上信息更新选人web页面信息。
 		});
 
-		App.bindEvents();  // bindEvents() 绑定事件 给提交按钮 来更改合约链上数据、获取链上数据、更新渲染主页数据。
+		App.bindEvents(); // bindEvents() 绑定事件 给提交按钮 来更改合约链上数据、获取链上数据、更新渲染主页数据。
 	},
+
+
 
 	// getInfo() 获取合约信息，后根据合约链上数据 更改渲染主页数据。
 	getInfo: function () {
 		App.contracts.InfoContract.deployed()
 			.then(function (instance) {
-				return instance.getInfo.call();  //获取合约链上信息
+				return instance.getInfo.call(); //获取合约链上信息
 			})
 			.then(function (result) {
-				$("#loader").hide();  //隐藏loading...
-				$("#info").html(result[0] + " (" + result[1] + " years old)");  //根据链上信息 渲染页面数据。
+				$("#loader").hide(); //隐藏loading...
+				$("#info").html(result[0] + " (" + result[1] + " years old)"); //根据链上信息 渲染页面数据。
 				console.log(result);
 			})
 			.catch(function (err) {
@@ -58,12 +64,12 @@ App = {
 			});
 	},
 
+
 	// bindEvents() 绑定事件 给提交按钮 来更改合约链上数据、获取链上数据、更新渲染主页数据。
 	bindEvents: function () {
 		$("#button").click(function () {
-			
 			//点击提交后，显示 loading 信息...
-			$("#loader").show();  
+			$("#loader").show();
 
 			//根据提交按钮信息，交互链上合约更改信息。 后链式调用 // getInfo() 获取合约信息，后根据合约链上数据 更改渲染主页数据。
 			App.contracts.InfoContract.deployed()
@@ -80,7 +86,8 @@ App = {
 		});
 	},
 
-	// 监听合约事件
+
+	// watchChanged() 监听合约事件: 获取合约链上信息、隐藏loading...、根据链上信息更新选人web页面信息。
 	watchChanged: function () {
 		App.contracts.InfoContract.deployed().then(function (instance) {
 			var infoEvent = instance.Instructor();
@@ -91,6 +98,7 @@ App = {
 		});
 	},
 };
+
 
 $(function () {
 	$(window).load(function () {
