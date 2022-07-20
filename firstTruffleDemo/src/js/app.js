@@ -8,7 +8,7 @@ App = {
 		return App.initWeb3();
 	},
 
-	// 初始化web3示例
+	// 初始化web3s实例 后 实例化合约 并 获取合约 渲染数据 交互合约 渲染数据 监听合约事件 添加事件绑定。
 	initWeb3: async function () {
 		if (window.ethereum) {
 			this.provider = window.ethereum;
@@ -25,12 +25,12 @@ App = {
 			web3 = new Web3(App.web3Provider);
 		}
 
-		return App.initContract();
+		return App.initContract(); //实例化合约 并 获取合约 渲染数据 交互合约 渲染数据 监听合约事件 添加事件绑定。
 	},
 
 
 
-	// 总体功能集成
+	// 总体功能集成:  实例化合约 并 获取合约 渲染数据 交互合约 渲染数据 监听合约事件 添加事件绑定。
 	// 初始化合约实例 并 获取合约渲染主页数据、监听合约事件获取信息渲染数据、添加绑定事件处理：更改链上数据 后 获取数据并渲染主页。
 	initContract: function () {
 		// ??? InfoContract.json 文件在哪里 ???
@@ -64,7 +64,6 @@ App = {
 			});
 	},
 
-
 	// bindEvents() 绑定事件 给提交按钮 来更改合约链上数据、获取链上数据、更新渲染主页数据。
 	bindEvents: function () {
 		$("#button").click(function () {
@@ -86,7 +85,6 @@ App = {
 		});
 	},
 
-
 	// watchChanged() 监听合约事件: 获取合约链上信息、隐藏loading...、根据链上信息更新选人web页面信息。
 	watchChanged: function () {
 		App.contracts.InfoContract.deployed().then(function (instance) {
@@ -98,7 +96,6 @@ App = {
 		});
 	},
 };
-
 
 $(function () {
 	$(window).load(function () {
